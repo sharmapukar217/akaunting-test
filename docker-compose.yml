@@ -1,0 +1,52 @@
+version: "3.8"
+
+networks:
+  akaunting-app:
+    driver: bridge
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: ${APP_NAME}_nginx
+    ports:
+      - ${NGINX_PORT:-3000}:80
+    depends_on:
+      - php
+    volumes:
+      - ./:/var/www/html:rw
+      - ./docker/logs/nginx:/var/logs/nginx:rw
+      - ./docker/nginx/site.conf:/etc/nginx/conf.d/default.conf:rw
+    networks:
+      - akaunting-app
+
+  php:
+    build: .
+    container_name: ${APP_NAME}_php
+    depends_on:
+      - database
+    volumes:
+      - ./:/var/www/html:rw
+    networks:
+      - akaunting-app
+
+  database:
+    image: postgres:alpine
+    container_name: ${APP_NAME}_database
+    ports:
+      - ${DB_PORT:-5432}:5432
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: $DB_DATABASE
+      POSTGRES_USER: $DB_USERNAME
+      POSTGRES_PASSWORD: $DB_PASSWORD
+    networks:
+      - akaunting-app
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - ${ADMINER_PORT:-8080}:8080
+    networks:
+      - akaunting-app
